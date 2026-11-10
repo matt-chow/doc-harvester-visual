@@ -1,38 +1,28 @@
 import { HERO_S2 } from '../components/Hero'
-import { fieldLine, FIELDS, lineStyle, toStage, type Field, type Line } from '../components/Invoice'
+import { fieldLine, FIELDS, lineStyle, measure, toStage, useLines, type Field, type Line } from '../components/Invoice'
+import { useT } from '../i18n'
 import { inOut, M, out, Stroke, Words } from '../timeline'
 
-/* 9–22s · From documents to structured information.
+/* Scene 2 · From documents to structured data.
    render → OCR (every line, no meaning) → Mistral (four fields) → fields lift into a structure. */
 
-const STEPS = [
-  { n: '01', title: 'Render', desc: 'Each PDF page becomes an image' },
-  { n: '02', title: 'Tesseract OCR', desc: 'Recognises characters and lines — not what they mean' },
-  { n: '03', title: 'Mistral', desc: 'Interprets the text and returns invoice fields' },
-]
 const STEP_T = [
   { t: [9.8, 10.4, 12.2, 12.5, 21.0, 21.6], o: [0, 1, 1, 0.4, 0.4, 0] },
   { t: [9.92, 10.52, 11.9, 12.2, 14.6, 14.9, 21.0, 21.6], o: [0, 0.35, 0.35, 1, 1, 0.4, 0.4, 0] },
   { t: [10.04, 10.64, 14.3, 14.6, 21.0, 21.6], o: [0, 0.35, 0.35, 1, 1, 0] },
 ]
 
-export const CARDS: Record<Field, { x: number; y: number; type: string }> = {
-  date: { x: 1004, y: 610, type: 'ISO date' },
-  amount: { x: 1334, y: 610, type: 'number' },
-  client: { x: 1004, y: 790, type: 'string' },
-  recipient: { x: 1334, y: 790, type: 'string' },
+export const CARDS: Record<Field, { x: number; y: number; type: 'string' | 'date' | 'number' }> = {
+  invoice_number: { x: 1004, y: 610, type: 'string' },
+  invoice_date: { x: 1350, y: 610, type: 'date' },
+  vendor_name: { x: 1004, y: 790, type: 'string' },
+  total_amount: { x: 1350, y: 790, type: 'number' },
 }
-const CARD_W = 300
+const CARD_W = 316
 const CARD_H = 150
 
-let ctx: CanvasRenderingContext2D | null = null
-/** Rendered text width in invoice-local px (fonts are loaded before mount). */
-export function measure(l: Line) {
-  ctx ??= document.createElement('canvas').getContext('2d')!
-  const st = lineStyle(l)
-  ctx.font = `${st.fontWeight} ${l.size}px ${l.font === 'serif' ? '"Fraunces Variable"' : l.font === 'mono' ? '"JetBrains Mono Variable"' : '"Inter Variable"'}`
-  return ctx.measureText(l.text).width
-}
+/** Scale that brings a field fragment to `px` type size without overflowing `maxW`. */
+export const fit = (l: Line, px: number, maxW: number) => Math.min(px / l.size, maxW / measure(l))
 
 /** A field fragment that leaves the page: same typography, scaled in place, then flown to its slot. */
 export function Chip({ l, t, x, y, s, o }: { l: Line; t: number[]; x: number[]; y: number[]; s: number[]; o: number[] }) {
@@ -49,10 +39,12 @@ export function Chip({ l, t, x, y, s, o }: { l: Line; t: number[]; x: number[]; 
 
 export function S2Extraction() {
   const { cx, cy, s } = HERO_S2
+  const tr = useT()
+  const lines = useLines()
   return (
     <>
       <Words
-        lines={['From documents', 'to structured information.']}
+        lines={tr.scene2.headline}
         at={9.2}
         end={20.9}
         step={0.07}
@@ -60,10 +52,10 @@ export function S2Extraction() {
         style={{ left: 1000, top: 128, fontSize: 66, lineHeight: 1.05, letterSpacing: '-0.025em', fontWeight: 370 }}
       />
 
-      {STEPS.map((st, i) => (
+      {tr.scene2.steps.map((st, i) => (
         <M key={i} className="absolute flex gap-5" style={{ left: 1004, top: 336 + i * 74 }} t={STEP_T[i].t} o={STEP_T[i].o}>
           <span className="label text-terra" style={{ fontSize: 14, paddingTop: 5 }}>
-            {st.n}
+            0{i + 1}
           </span>
           <div>
             <div className="font-sans text-ink" style={{ fontSize: 22, fontWeight: 560, letterSpacing: '-0.01em' }}>
@@ -78,7 +70,7 @@ export function S2Extraction() {
 
       <svg className="absolute inset-0 overflow-visible" width={1920} height={1080}>
         {FIELDS.map((f, k) => {
-          const l = fieldLine(f)
+          const l = fieldLine(lines, f)
           const L = 17.0 + k * 0.32
           const [sx, sy] = toStage(cx, cy, s, l.x + measure(l) + 5, l.y + l.size / 2)
           const c = CARDS[f]
@@ -95,22 +87,23 @@ export function S2Extraction() {
         const arrive = L + 1.75
         return (
           <M key={f} className="absolute" style={{ left: c.x, top: c.y, width: CARD_W, height: CARD_H, borderRadius: 6, border: '1px solid var(--color-rule)', background: 'var(--color-sheet)' }} t={[arrive - 0.55, arrive + 0.1, 20.9, 21.6]} o={[0, 1, 1, 0]} s={[0.94, 1, 1, 0.98]} y={[0, 0, 0, -16]} ease={[out, inOut, inOut]}>
-            <span className="label absolute text-terra" style={{ left: 22, top: 20, fontSize: 13 }}>
-              {f}
+            <span className="label absolute text-terra whitespace-nowrap" style={{ left: 22, top: 20, fontSize: 13 }}>
+              {tr.fields[f]}
             </span>
-            <span className="label absolute text-ink-3" style={{ left: 22, bottom: 18, fontSize: 11 }}>
-              {c.type}
+            <span className="label absolute whitespace-nowrap" style={{ left: 22, bottom: 18, fontSize: 11, textTransform: 'none', letterSpacing: '0.02em' }}>
+              <span className="text-ink-2">{f}</span>
+              <span className="text-ink-3"> · {tr.types[c.type]}</span>
             </span>
           </M>
         )
       })}
 
       {FIELDS.map((f, k) => {
-        const l = fieldLine(f)
+        const l = fieldLine(lines, f)
         const L = 17.0 + k * 0.32
         const [sx, sy] = toStage(cx, cy, s, l.x - 5, l.y - 4)
         const c = CARDS[f]
-        const ts = 26 / l.size
+        const ts = fit(l, 26, CARD_W - 54)
         const [tx, ty] = [c.x + 22 - 5 * ts, c.y + 58 - 4 * ts]
         return (
           <Chip

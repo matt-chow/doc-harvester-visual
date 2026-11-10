@@ -2,26 +2,44 @@ import {
   createContext,
   createElement,
   useContext,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
+  useState,
   type CSSProperties,
   type ReactNode,
 } from 'react'
 import { cubicBezier, interpolate, type EasingFunction } from 'motion'
-import { useReducedMotion, useTime, useTransform, type MotionValue } from 'motion/react'
+import { useAnimationFrame, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
+import { LangContext, LANGS, type Lang } from './i18n'
 
-/* One clock drives everything: every element is a pure function of loop time t (seconds).
-   No per-element timers exist, so loops can't drift or accumulate, and frame rate only affects smoothness. */
+/* One clock drives everything. A single accumulator (cycle seconds) advances on the frame loop
+   unless paused; every element is a pure function of it, so nothing can drift or run independently.
+   Scene keyframes are authored in "scene time" (0–60); WARP maps presentation time onto it,
+   stretching transitions and inserting near-still holds after reveals rather than scaling uniformly. */
 
-export const DURATION = 60
+export const D = 102 // seconds per language pass
+export const CYCLE = D * 2 // en-CA pass, then fr-CA pass
 
+// [presentation s, scene s] — steep segments are motion, shallow ones are holds
+const WARP: [number, number][] = [
+  [0, 0], [0.8, 0.45], [3.6, 2.4], [6.0, 4.4], [9.0, 5.0], [11.0, 6.6], [13.0, 7.0],
+  [16, 9], [18.6, 10.6], [20.4, 11], [22.8, 12.4], [25.2, 13.9], [26.6, 14.2], [28.6, 15.8], [30.2, 16.4], [33.6, 19.9], [36, 20.5],
+  [38, 22], [41, 24.2], [42.6, 24.7], [45.4, 27.2], [47.2, 28.2], [49.6, 28.3], [52.6, 31.3], [56.2, 33.9], [58.6, 34.0],
+  [60, 35], [62.6, 37.0], [63.6, 37.2], [65.6, 38.8], [67.4, 40.4], [68.6, 40.6], [70.4, 41.9], [73.4, 43.7], [74.4, 43.9], [77, 46.3], [79.2, 46.45],
+  [80, 47], [82.6, 49.0], [83.4, 49.2], [86.2, 51.6], [88.2, 51.8], [90.6, 53.6], [92.6, 54.5], [94.4, 55.0], [96.4, 57.0], [99.4, 58.4],
+  [D, 60],
+]
+export const warp = interpolate(WARP.map((k) => k[0]), WARP.map((k) => k[1]))
+
+/** start: presentation seconds; hold: settled scene-time frame shown under reduced motion */
 export const SCENES = [
-  { start: 0, label: 'The problem', hold: 4.9 },
-  { start: 9, label: 'The extraction', hold: 20.8 },
-  { start: 22, label: 'The intelligence', hold: 33.95 },
-  { start: 35, label: 'The research', hold: 46.4 },
-  { start: 47, label: 'The outcome', hold: 56.9 },
+  { start: 0, hold: 4.9 },
+  { start: 16, hold: 20.8 },
+  { start: 38, hold: 33.95 },
+  { start: 60, hold: 46.4 },
+  { start: 80, hold: 56.9 },
 ] as const
 
 export const inOut = cubicBezier(0.65, 0, 0.35, 1)
@@ -30,26 +48,66 @@ export const inn = cubicBezier(0.6, 0, 0.9, 0.4)
 export const linear = (v: number) => v
 
 const params = new URLSearchParams(location.search)
-// ?t=12.5 freezes the frame (used for screenshot verification); ?rate=10 speeds up playback (loop testing)
-const FREEZE = params.has('t') ? Number(params.get('t')) : null
+// ?t=110 freezes a frame in cycle seconds (≥102 is the French pass); ?from=100 starts playing there; ?rate=10 speeds playback
+const FREEZE = params.has('t') ? Number(params.get('t')) % CYCLE : null
 const RATE = Number(params.get('rate')) || 1
+const FROM = (Number(params.get('from')) || 0) % CYCLE
+const langAt = (c: number): Lang => LANGS[c < D ? 0 : 1]
 
 const Clock = createContext<MotionValue<number>>(null!)
+/** scene time, for scene keyframes */
 export const useClock = () => useContext(Clock)
+/** Re-base M elements inside onto another time axis (presentation or cycle seconds). */
+export const ClockScope = Clock.Provider
 
-export function ClockProvider({ children }: { children: ReactNode }) {
+const Times = createContext<{ local: MotionValue<number>; cycle: MotionValue<number>; paused: boolean }>(null!)
+export const useTimes = () => useContext(Times)
+
+export function ClockProvider({ children }: { children: (lang: Lang) => ReactNode }) {
   const reduced = useReducedMotion()
-  const time = useTime()
-  const t = useTransform(time, (ms) => {
-    if (FREEZE !== null) return FREEZE % DURATION
-    const s = ((ms / 1000) * RATE) % DURATION
-    if (!reduced) return s
+  const acc = useRef(FREEZE ?? FROM)
+  const cycle = useMotionValue(acc.current)
+  const local = useTransform(cycle, (c) => c % D)
+  const scene = useTransform(local, (s) => {
+    if (!reduced) return warp(s)
     // reduced motion: hold each scene's settled frame instead of animating through it
     let i = SCENES.length - 1
     while (SCENES[i].start > s) i--
     return SCENES[i].hold
   })
-  return <Clock.Provider value={t}>{children}</Clock.Provider>
+  const [lang, setLang] = useState(langAt(acc.current))
+  const [paused, setPaused] = useState(false)
+  const pausedRef = useRef(false)
+
+  useAnimationFrame((_, delta) => {
+    // the frame loop clamps delta (≈40 ms), so a backgrounded tab resumes where it left off
+    if (FREEZE !== null || pausedRef.current) return
+    acc.current = (acc.current + (delta / 1000) * RATE) % CYCLE
+    cycle.set(acc.current)
+    const l = langAt(acc.current)
+    if (l !== lang) setLang(l)
+  })
+
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return
+      e.preventDefault()
+      if (e.repeat) return
+      pausedRef.current = !pausedRef.current
+      setPaused(pausedRef.current)
+    }
+    addEventListener('keydown', key)
+    return () => removeEventListener('keydown', key)
+  }, [])
+  useEffect(() => void (document.documentElement.lang = lang), [lang])
+
+  return (
+    <Times.Provider value={{ local, cycle, paused }}>
+      <LangContext.Provider value={lang}>
+        <Clock.Provider value={scene}>{children(lang)}</Clock.Provider>
+      </LangContext.Provider>
+    </Times.Provider>
+  )
 }
 
 type KF = readonly number[]

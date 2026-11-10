@@ -1,25 +1,20 @@
 import type { CSSProperties } from 'react'
+import { useT } from '../i18n'
 import { inOut, linear, M, out, Stroke, Words } from '../timeline'
 import { MISTRAL_R } from './S3Intelligence'
 
-/* 35–47s · Teaching smaller models to understand more.
+/* Scene 4 · Teaching smaller models to understand more.
    examples → Mistral drafts candidate labels → people review & correct → curated dataset → LayoutLMv3 (offline). */
 
 const Y = 600
-const STATIONS = [
-  { x: 250, label: 'Examples' },
-  { x: 560, label: 'Mistral drafts' },
-  { x: 860, label: 'Candidate labels' },
-  { x: 1160, label: 'Human review' },
-  { x: 1460, label: 'Curated dataset' },
-  { x: 1740, label: 'LayoutLMv3' },
-]
+const STATIONS = [250, 560, 860, 1160, 1460, 1740]
 const DW = 170
 const DH = 222
 const fade: number[] = [46.5, 47.2]
 
 /** The Mistral node: escalation target in scene 3, annotation drafter in scene 4. */
 export function MistralNode() {
+  const tr = useT()
   return (
     <M className="absolute flex flex-col justify-center" style={{ left: -107, top: -37, width: 214, height: 74, padding: '0 18px', borderRadius: 8, background: 'var(--color-sheet)', border: '1.5px solid var(--color-terra)' }} t={[28.6, 29.2, 34.2, 35.6, 38.0, 38.35, 38.8, 46.5, 47.2]} x={[MISTRAL_R.x, MISTRAL_R.x, MISTRAL_R.x, 560, 560, 560, 560, 560, 560]} y={[MISTRAL_R.y + 14, MISTRAL_R.y, MISTRAL_R.y, Y, Y, Y, Y, Y, Y]} s={[1, 1, 1, 1.1, 1.1, 1.18, 1.1, 1.1, 1.1]} o={[0, 1, 1, 1, 1, 1, 1, 1, 0]}>
       <span className="font-sans text-ink" style={{ fontSize: 19, fontWeight: 580, letterSpacing: '-0.01em' }}>
@@ -27,10 +22,10 @@ export function MistralNode() {
       </span>
       <span className="relative label" style={{ fontSize: 11, marginTop: 4, height: 13, letterSpacing: '0.05em', color: 'var(--color-terra)' }}>
         <M as="span" className="absolute left-0 top-0 whitespace-nowrap" t={[34.2, 34.7]} o={[1, 0]}>
-          difficult cases
+          {tr.scene3.difficult}
         </M>
         <M as="span" className="absolute left-0 top-0 whitespace-nowrap" t={[34.9, 35.5]} o={[0, 1]}>
-          drafts candidate labels
+          {tr.scene4.drafts}
         </M>
       </span>
     </M>
@@ -41,19 +36,19 @@ const bar = (x: number, y: number, w: number, c = 'var(--color-rule)'): CSSPrope
 
 // field boxes on the training document (local coords)
 const BOXES = [
-  { k: 'date', x: 13, y: 35, w: 66, check: 42.0 },
-  { k: 'client', x: 13, y: 65, w: 74, check: 42.3 },
-  { k: 'recipient', x: 95, y: 65, w: 62, check: 42.6 },
-  { k: 'amount', x: 95, y: 155, w: 62, check: 43.6 },
+  { k: 'invoice_number', x: 13, y: 35, w: 62, check: 42.0 },
+  { k: 'invoice_date', x: 95, y: 35, w: 48, check: 42.3 },
+  { k: 'vendor_name', x: 13, y: 65, w: 74, check: 42.6 },
+  { k: 'total_amount', x: 95, y: 155, w: 62, check: 43.6 },
 ]
 
 function TrainDoc({ front }: { front?: boolean }) {
   return (
     <div className="sheet absolute overflow-hidden" style={{ width: DW, height: DH, borderRadius: 3 }}>
       <div style={bar(17, 14, 64, 'var(--color-ink)')} />
-      <div style={bar(17, 39, 58)} />
+      <div style={bar(17, 39, 54)} />
+      <div style={bar(99, 39, 40)} />
       <div style={bar(17, 69, 66, 'var(--color-ink-3)')} />
-      <div style={bar(99, 69, 54, 'var(--color-ink-3)')} />
       {[104, 120, 136].map((y) => (
         <div key={y} style={bar(17, y, 136)} />
       ))}
@@ -61,7 +56,7 @@ function TrainDoc({ front }: { front?: boolean }) {
       <div style={bar(99, 179, 54, 'var(--color-ink)')} />
       {BOXES.map((b, i) => {
         const a = 39.7 + i * 0.18
-        const wrong = b.k === 'amount'
+        const wrong = b.k === 'total_amount'
         const box: CSSProperties = { position: 'absolute', left: b.x, top: b.y, width: b.w, height: 14, borderRadius: 2 }
         return (
           <div key={b.k}>
@@ -102,10 +97,12 @@ const netPts = NET.map((n, c) => Array.from({ length: n }, (_, i) => [1660 + c *
 const netD = netPts.slice(0, -1).flatMap((col, c) => col.flatMap(([x0, y0]) => netPts[c + 1].map(([x1, y1]) => `M${x0} ${y0}L${x1} ${y1}`))).join('')
 
 export function S4Research() {
+  const tr = useT()
+  const c4 = tr.scene4
   return (
     <>
       <Words
-        lines={['Teaching smaller models', 'to understand more.']}
+        lines={c4.headline}
         at={35.2}
         end={46.4}
         step={0.06}
@@ -117,11 +114,11 @@ export function S4Research() {
       <svg className="absolute inset-0 overflow-visible" width={1920} height={1080}>
         <Stroke d="M160 880H1830" t={[35.6, 36.9, ...fade]} draw={[0, 1, 1, 1]} o={[1, 1, 1, 0]} color="var(--color-rule)" width={1.5} />
       </svg>
-      {STATIONS.map((st, i) => (
-        <M key={i} className="absolute" style={{ left: st.x - 90, top: 874, width: 180 }} t={[35.9 + i * 0.15, 36.4 + i * 0.15, ...fade]} o={[0, 1, 1, 0]} y={[8, 0, 0, 0]} ease={[out, inOut, inOut]}>
+      {STATIONS.map((sx, i) => (
+        <M key={i} className="absolute" style={{ left: sx - 130, top: 874, width: 260 }} t={[35.9 + i * 0.15, 36.4 + i * 0.15, ...fade]} o={[0, 1, 1, 0]} y={[8, 0, 0, 0]} ease={[out, inOut, inOut]}>
           <div className="mx-auto rounded-full" style={{ width: 11, height: 11, background: 'var(--color-paper)', border: '1.5px solid var(--color-ink-3)' }} />
           <div className="label text-ink-2 text-center" style={{ fontSize: 11, marginTop: 12 }}>
-            <span className="text-terra">0{i + 1}</span> {st.label}
+            <span className="text-terra">0{i + 1}</span> {c4.stations[i]}
           </div>
         </M>
       ))}
@@ -136,7 +133,7 @@ export function S4Research() {
         ))}
         <TrainDoc front />
         {BOXES.map((b) => (
-          <Mark key={b.k} x={b.x + b.w + 3} y={b.y + (b.k === 'amount' ? 20 : 0) - 1} at={b.check} ok />
+          <Mark key={b.k} x={b.x + b.w + 3} y={b.y + (b.k === 'total_amount' ? 20 : 0) - 1} at={b.check} ok />
         ))}
         <Mark x={95 + 62 + 3} y={154} at={42.85} ok={false} />
       </M>
@@ -150,10 +147,10 @@ export function S4Research() {
         </svg>
         <div>
           <div className="font-serif text-ink" style={{ fontSize: 26 }}>
-            Human review
+            {c4.review}
           </div>
           <div className="label text-ink-2" style={{ fontSize: 11, marginTop: 2 }}>
-            accept · correct · reject
+            {c4.actions}
           </div>
         </div>
       </M>
@@ -162,12 +159,12 @@ export function S4Research() {
       {Array.from({ length: 12 }, (_, idx) => {
         const col = idx % 3
         const row = Math.floor(idx / 3)
-        const gx = 1460 + (col - 1) * 84
+        const gx = 1400 + (col - 1) * 128
         const gy = Y + (row - 1.5) * 44
         const a = 44.4 + idx * 0.05
         const c = 45.3 + idx * 0.06
         return (
-          <M key={idx} className="absolute label grid place-items-center" style={{ left: -37, top: -17, width: 74, height: 34, fontSize: 10, borderRadius: 4, background: 'var(--color-sage-soft)', border: '1px solid var(--color-sage)', color: 'var(--color-ink)' }} t={[a, a + 0.6, c, c + 0.7]} x={[1460, gx, gx, 1740]} y={[Y, gy, gy, Y]} s={[0.4, 1, 1, 0.2]} o={[0, 1, 1, 0]}>
+          <M key={idx} className="absolute label grid place-items-center" style={{ left: -59, top: -17, width: 118, height: 34, fontSize: 10, textTransform: 'none', letterSpacing: '0.02em', borderRadius: 4, background: 'var(--color-sage-soft)', border: '1px solid var(--color-sage)', color: 'var(--color-ink)' }} t={[a, a + 0.6, c, c + 0.7]} x={[1460, gx, gx, 1740]} y={[Y, gy, gy, Y]} s={[0.4, 1, 1, 0.2]} o={[0, 1, 1, 0]}>
             {BOXES[row].k}
           </M>
         )
@@ -178,7 +175,7 @@ export function S4Research() {
           LayoutLMv3
         </div>
         <div className="label text-ink-2" style={{ position: 'absolute', left: 20, bottom: 14, fontSize: 10 }}>
-          trained &amp; evaluated offline
+          {c4.offline}
         </div>
       </M>
       <svg className="absolute inset-0 overflow-visible pointer-events-none" width={1920} height={1080}>
@@ -189,7 +186,7 @@ export function S4Research() {
       </svg>
 
       <M className="absolute font-sans text-ink-2" style={{ left: 120, top: 966, fontSize: 16 }} t={[43.9, 44.5, ...fade]} o={[0, 1, 1, 0]}>
-        Only reviewed labels become training data. Training happens offline — not during live requests.
+        {c4.footnote}
       </M>
     </>
   )

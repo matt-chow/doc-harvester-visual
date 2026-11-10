@@ -1,5 +1,6 @@
 import { M, out } from '../timeline'
-import { FIELDS, Invoice, INV_H, INV_W, LINES, type Line } from './Invoice'
+import { useT } from '../i18n'
+import { FIELDS, Invoice, INV_H, INV_W, SAMPLE, useLines, type Line } from './Invoice'
 
 /* The invoice is one continuous object for the whole film:
    dot → collection → page under analysis → pipeline input → JSON source → graph centre → dot. */
@@ -30,10 +31,12 @@ export const HERO_S2 = { cx: 560, cy: 580, s: 1.12 }
 export const HERO_S5 = { cx: 480, cy: 600, s: 0.78 }
 
 // OCR boxes sweep top-to-bottom in reading order
-const order = LINES.map((l, i) => ({ l, i })).sort((a, b) => a.l.y - b.l.y || a.l.x - b.l.x)
-const rank = new Map(order.map((o, r) => [o.i, r]))
+const ranks = (lines: Line[]) => {
+  const order = lines.map((l, i) => ({ l, i })).sort((a, b) => a.l.y - b.l.y || a.l.x - b.l.x)
+  return new Map(order.map((o, r) => [o.i, r]))
+}
 
-function Boxes(l: Line, i: number) {
+function Boxes(l: Line, i: number, rank: Map<number, number>) {
   const a = 12.4 + rank.get(i)! * 0.045
   const f = l.field ? FIELDS.indexOf(l.field) : -1
   const box = 'absolute pointer-events-none'
@@ -61,7 +64,7 @@ function Boxes(l: Line, i: number) {
           />
           <M
             className="absolute label whitespace-nowrap"
-            style={{ left: -5, bottom: 'calc(100% + 8px)', fontSize: 9, padding: '3px 5px 2px', borderRadius: 2, background: 'var(--color-terra)', color: '#fff', lineHeight: 1, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 500 }}
+            style={{ left: -5, bottom: 'calc(100% + 8px)', fontSize: 9, padding: '3px 5px 2px', borderRadius: 2, background: 'var(--color-terra)', color: '#fff', lineHeight: 1, letterSpacing: '0.04em', textTransform: 'none', fontWeight: 500 }}
             t={[15.1 + f * 0.22, 15.6 + f * 0.22, 21, 21.5]}
             o={[0, 1, 1, 0]}
             y={[6, 0, 0, 0]}
@@ -76,9 +79,11 @@ function Boxes(l: Line, i: number) {
 }
 
 export function Hero() {
+  const tr = useT()
+  const rank = ranks(useLines())
   return (
     <M className="absolute" style={{ left: -INV_W / 2, top: -INV_H / 2, width: INV_W, height: INV_H }} t={col(0)} x={col(1)} y={col(2)} s={col(3)} rot={col(4)} o={col(5)}>
-      <Invoice overlay={Boxes}>
+      <Invoice overlay={(l, i) => Boxes(l, i, rank)}>
         {/* 01 · render: the page becomes pixels */}
         <M
           className="absolute inset-0"
@@ -103,7 +108,7 @@ export function Hero() {
         ))}
       </M>
       <M className="absolute label whitespace-nowrap" style={{ left: -24, top: -70, fontSize: 19, color: 'var(--color-terra)' }} t={[5.8, 6.5, 7.8, 8.3]} o={[0, 1, 1, 0]} x={[-10, 0, 0, 0]} ease={out}>
-        selected · invoice_0417.pdf
+        {tr.scene1.selected} · {SAMPLE.invoice_number}.pdf
       </M>
     </M>
   )

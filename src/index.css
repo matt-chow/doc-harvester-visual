@@ -28,7 +28,6 @@ body,
   background: var(--color-paper);
   color: var(--color-ink);
   overflow: hidden;
-  cursor: none;
   -webkit-font-smoothing: antialiased;
 }
 

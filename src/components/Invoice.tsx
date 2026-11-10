@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { money, translations, useLang, type Lang } from '../i18n'
 
 /* The hero invoice, laid out in fixed local coordinates (520×680) so every
    text line's position is known exactly — OCR boxes and lifted field fragments rely on it. */
@@ -6,8 +7,10 @@ import type { CSSProperties, ReactNode } from 'react'
 export const INV_W = 520
 export const INV_H = 680
 
-export type Field = 'date' | 'amount' | 'client' | 'recipient'
-export const FIELDS: Field[] = ['date', 'amount', 'client', 'recipient']
+/** The four canonical extraction fields — keys are never translated. */
+export type Field = 'invoice_number' | 'invoice_date' | 'vendor_name' | 'total_amount'
+export const FIELDS: Field[] = ['invoice_number', 'invoice_date', 'vendor_name', 'total_amount']
+export const SAMPLE = { invoice_number: 'INV-2026-0042', invoice_date: '2026-11-10', vendor_name: 'Northstar Supplies Inc.', total_amount: 1250 }
 
 export interface Line {
   x: number
@@ -25,50 +28,73 @@ export interface Line {
 
 const label = (x: number, y: number, text: string, right = false): Line => ({ x, y, text, size: 9.5, font: 'mono', muted: true, caps: true, right })
 
-export const LINES: Line[] = [
-  { x: 72, y: 47, text: 'Northstar Inc.', size: 15, weight: 620 },
-  { x: 480, y: 38, text: 'Invoice', size: 32, font: 'serif', weight: 420, right: true },
-  label(40, 104, 'Invoice no.'),
-  { x: 40, y: 121, text: 'NS-0417', size: 13 },
-  label(190, 104, 'Issued'),
-  { x: 190, y: 121, text: '2026-11-10', size: 13, field: 'date' },
-  label(330, 104, 'Due'),
-  { x: 330, y: 121, text: '2026-12-10', size: 13 },
-  label(40, 184, 'Client'),
-  { x: 40, y: 202, text: 'Acme Ltd.', size: 16, weight: 620, field: 'client' },
-  { x: 40, y: 228, text: '14 Harbour Row', size: 12, muted: true },
-  { x: 40, y: 246, text: 'Leeds LS1 4AB', size: 12, muted: true },
-  label(280, 184, 'Recipient'),
-  { x: 280, y: 202, text: 'Northstar Inc.', size: 16, weight: 620, field: 'recipient' },
-  { x: 280, y: 228, text: 'Accounts Receivable', size: 12, muted: true },
-  { x: 280, y: 246, text: 'Bristol BS1 6QH', size: 12, muted: true },
-  label(40, 300, 'Description'),
-  label(330, 300, 'Qty', true),
-  label(400, 300, 'Rate', true),
-  label(480, 300, 'Amount', true),
-  { x: 40, y: 334, text: 'Document review', size: 13 },
-  { x: 330, y: 334, text: '10', size: 13, right: true },
-  { x: 400, y: 334, text: '75.00', size: 13, right: true },
-  { x: 480, y: 334, text: '750.00', size: 13, right: true },
-  { x: 40, y: 366, text: 'Data structuring', size: 13 },
-  { x: 330, y: 366, text: '4', size: 13, right: true },
-  { x: 400, y: 366, text: '100.00', size: 13, right: true },
-  { x: 480, y: 366, text: '400.00', size: 13, right: true },
-  { x: 40, y: 398, text: 'Archive indexing', size: 13 },
-  { x: 330, y: 398, text: '1', size: 13, right: true },
-  { x: 400, y: 398, text: '100.00', size: 13, right: true },
-  { x: 480, y: 398, text: '100.00', size: 13, right: true },
-  { x: 300, y: 454, text: 'Subtotal', size: 12, muted: true },
-  { x: 480, y: 454, text: '1,250.00', size: 12, right: true, muted: true },
-  { x: 300, y: 478, text: 'Tax (0%)', size: 12, muted: true },
-  { x: 480, y: 478, text: '0.00', size: 12, right: true, muted: true },
-  { x: 300, y: 524, text: 'Total due', size: 13, weight: 620 },
-  { x: 386, y: 519, text: '$1,250.00', size: 19, weight: 680, field: 'amount' },
-  { x: 40, y: 586, text: 'Thank you.', size: 17, font: 'serif' },
-  { x: 40, y: 620, text: 'Payment within 30 days · Ref NS-0417', size: 9.5, font: 'mono', muted: true },
+const ITEMS = [
+  [10, 75, 750],
+  [4, 100, 400],
+  [1, 100, 100],
 ]
 
-export const fieldLine = (f: Field) => LINES.find((l) => l.field === f)!
+/** The invoice's lines for one locale: same document, same values, localized labels and number formats. */
+function buildLines(lang: Lang): Line[] {
+  const t = translations[lang].invoice
+  const n = (v: number) => money(lang, v, false)
+  const total: Line = { x: 0, y: 519, text: money(lang, SAMPLE.total_amount), size: 19, weight: 680, field: 'total_amount' }
+  // field fragments are positioned by their left edge, so the right-aligned total is measured in place
+  total.x = 480 - measure(total)
+  return [
+    { x: 72, y: 47, text: 'Northstar Supplies', size: 15, weight: 620 },
+    { x: 480, y: 38, text: t.title, size: 32, font: 'serif', weight: 420, right: true },
+    label(40, 104, t.number),
+    { x: 40, y: 121, text: SAMPLE.invoice_number, size: 13, field: 'invoice_number' },
+    label(190, 104, t.issued),
+    { x: 190, y: 121, text: SAMPLE.invoice_date, size: 13, field: 'invoice_date' },
+    label(330, 104, t.due),
+    { x: 330, y: 121, text: '2026-12-10', size: 13 },
+    label(40, 184, t.billTo),
+    { x: 40, y: 202, text: 'Acme Ltd.', size: 16, weight: 620 },
+    { x: 40, y: 228, text: '88 Harbour Road', size: 12, muted: true },
+    { x: 40, y: 246, text: 'Halifax NS B3J 1A1', size: 12, muted: true },
+    label(270, 184, t.from),
+    { x: 270, y: 202, text: SAMPLE.vendor_name, size: 16, weight: 620, field: 'vendor_name' },
+    { x: 270, y: 228, text: t.attn, size: 12, muted: true },
+    { x: 270, y: 246, text: 'Toronto ON M5H 2Y4', size: 12, muted: true },
+    label(40, 300, t.desc),
+    label(330, 300, t.qty, true),
+    label(400, 300, t.rate, true),
+    label(480, 300, t.amount, true),
+    ...ITEMS.flatMap(([q, r, a], i): Line[] => [
+      { x: 40, y: 334 + i * 32, text: t.items[i], size: 13 },
+      { x: 330, y: 334 + i * 32, text: String(q), size: 13, right: true },
+      { x: 400, y: 334 + i * 32, text: n(r), size: 13, right: true },
+      { x: 480, y: 334 + i * 32, text: n(a), size: 13, right: true },
+    ]),
+    { x: 300, y: 454, text: t.subtotal, size: 12, muted: true },
+    { x: 480, y: 454, text: n(SAMPLE.total_amount), size: 12, right: true, muted: true },
+    { x: 300, y: 478, text: t.tax, size: 12, muted: true },
+    { x: 480, y: 478, text: n(0), size: 12, right: true, muted: true },
+    { x: 300, y: 524, text: t.total, size: 13, weight: 620 },
+    total,
+    { x: 40, y: 586, text: t.thanks, size: 17, font: 'serif' },
+    { x: 40, y: 620, text: t.terms, size: 9.5, font: 'mono', muted: true },
+  ]
+}
+const cache = new Map<Lang, Line[]>()
+/** Invoice lines for the active locale (built after fonts load, so measurements are exact). */
+export function useLines() {
+  const lang = useLang()
+  if (!cache.has(lang)) cache.set(lang, buildLines(lang))
+  return cache.get(lang)!
+}
+export const fieldLine = (lines: Line[], f: Field) => lines.find((l) => l.field === f)!
+
+let ctx: CanvasRenderingContext2D | null = null
+/** Rendered text width in invoice-local px (fonts are loaded before mount). */
+export function measure(l: Line) {
+  ctx ??= document.createElement('canvas').getContext('2d')!
+  const st = lineStyle(l)
+  ctx.font = `${st.fontWeight} ${l.size}px ${l.font === 'serif' ? '"Fraunces Variable"' : l.font === 'mono' ? '"JetBrains Mono Variable"' : '"Inter Variable"'}`
+  return ctx.measureText(l.text).width
+}
 
 export function lineStyle(l: Line): CSSProperties {
   return {
@@ -87,6 +113,7 @@ export function lineStyle(l: Line): CSSProperties {
 export const toStage = (cx: number, cy: number, s: number, lx: number, ly: number) => [cx + s * (lx - INV_W / 2), cy + s * (ly - INV_H / 2)] as const
 
 export function Invoice({ overlay, children }: { overlay?: (l: Line, i: number) => ReactNode; children?: ReactNode }) {
+  const LINES = useLines()
   return (
     <div className="sheet absolute overflow-hidden" style={{ width: INV_W, height: INV_H, borderRadius: 3 }}>
       <div className="absolute" style={{ left: 40, top: 44, width: 22, height: 22, borderRadius: 4, background: 'var(--color-ink)' }}>
