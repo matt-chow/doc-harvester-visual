@@ -27,7 +27,7 @@ export const fit = (l: Line, px: number, maxW: number) => Math.min(px / l.size, 
 /** A field fragment that leaves the page: same typography, scaled in place, then flown to its slot. */
 export function Chip({ l, t, x, y, s, o }: { l: Line; t: number[]; x: number[]; y: number[]; s: number[]; o: number[] }) {
   return (
-    <M className="absolute" style={{ left: 0, top: 0, transformOrigin: '0 0', padding: '4px 5px', borderRadius: 2 }} t={t} x={x} y={y} s={s} o={o}>
+    <M className="absolute" style={{ left: 0, top: 0, transformOrigin: '0 0', padding: '4px 5px', borderRadius: 2 }} t={t} x={x} y={y} s={s} o={o} ease="smooth">
       <M className="absolute inset-0" style={{ borderRadius: 2, background: 'rgb(235 195 173 / 0.6)', border: '1px solid var(--color-terra)' }} t={[t[1], t[2], t[3] - 0.3, t[3]]} o={[1, 1, 1, 0]} />
       <M className="absolute inset-0" style={{ borderRadius: 2, boxShadow: '0 6px 14px -4px rgb(70 50 30 / .35)' }} t={[t[1], t[2], t[3] - 0.2, t[3]]} o={[0, 1, 1, 0]} />
       <span className="relative block" style={lineStyle(l)}>

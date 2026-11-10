@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Glyph } from '../components/Invoice'
 import { useT } from '../i18n'
-import { inOut, linear, M, out, Stroke, Words } from '../timeline'
+import { inOut, M, out, Stroke, Words } from '../timeline'
 
 /* Scene 3 · Not every document needs the same level of intelligence.
    Top lane: the established pipeline (solid). Below: the research direction (dashed, sage),
@@ -45,7 +45,7 @@ function Token({ path, times, children }: { path: P[]; times: number[]; children
   const t = [times[0] - 0.2, ...times, times[times.length - 1] + 0.25]
   const pts = [path[0], ...path, path[path.length - 1]]
   return (
-    <M className="absolute" style={{ left: -13, top: -17 }} t={t} x={pts.map((p) => p[0])} y={pts.map((p) => p[1])} o={[0, ...times.map(() => 1), 0]} ease={linear}>
+    <M className="absolute" style={{ left: -13, top: -17 }} t={t} x={pts.map((p) => p[0])} y={pts.map((p) => p[1])} o={[0, ...times.map(() => 1), 0]} ease="smooth">
       {children}
     </M>
   )

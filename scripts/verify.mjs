@@ -3,6 +3,7 @@
 import { chromium } from 'playwright'
 import { mkdirSync } from 'node:fs'
 import { translations } from '../src/i18n.ts'
+import { monotone } from '../src/monotone.ts'
 
 const D = 102
 const CYCLE = D * 2
@@ -14,10 +15,27 @@ const TIMES = (process.env.TIMES ?? '0.4,2.5,5,8,10.5,12.5,15,18,20,23,25.8,28,3
 const LANGS = (process.env.LANGS ?? 'en-CA,fr-CA').split(',')
 const SIZES = (process.env.SIZES ?? '1920x1080,1366x768').split(',').map((s) => s.split('x').map(Number))
 
-const browser = await chromium.launch()
 let failed = false
 const fail = (...m) => ((failed = true), console.error('FAIL', ...m))
 const ok = (...m) => console.log('ok  ', ...m)
+
+// --- warp: monotone cubic must hit every knot, never run backwards, and change speed continuously
+{
+  const K = [[0, 0], [3, 2.4], [6, 2.5], [8, 5], [10, 5.05], [12, 9]]
+  const f = monotone(K)
+  const hits = K.every(([x, y]) => Math.abs(f(x) - y) < 1e-9)
+  let back = false, maxJump = 0
+  // stop a step short of the last knot: past it the spline clamps flat, which is intended
+  for (let x = 0, p = f(0), v = 0; x < 11.998; x += 0.001) {
+    const q = f(x + 0.001), nv = (q - p) / 0.001
+    if (q < p - 1e-12) back = true
+    if (x > 0.001) maxJump = Math.max(maxJump, Math.abs(nv - v))
+    ;[p, v] = [q, nv]
+  }
+  hits && !back && maxJump < 0.02 ? ok(`warp spline: passes every knot, monotone, max speed step ${maxJump.toFixed(4)} per ms`) : fail('warp spline', { hits, back, maxJump })
+}
+
+const browser = await chromium.launch()
 
 if (only !== '--loop-only') {
   mkdirSync('shots', { recursive: true })

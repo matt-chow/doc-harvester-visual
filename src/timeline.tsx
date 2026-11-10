@@ -11,8 +11,9 @@ import {
   type ReactNode,
 } from 'react'
 import { cubicBezier, interpolate, type EasingFunction } from 'motion'
-import { useAnimationFrame, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
+import { useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'motion/react'
 import { LangContext, LANGS, type Lang } from './i18n'
+import { monotone } from './monotone'
 
 /* One clock drives everything. A single accumulator (cycle seconds) advances on the frame loop
    unless paused; every element is a pure function of it, so nothing can drift or run independently.
@@ -31,7 +32,7 @@ const WARP: [number, number][] = [
   [80, 47], [82.6, 49.0], [83.4, 49.2], [86.2, 51.6], [88.2, 51.8], [90.6, 53.6], [92.6, 54.5], [94.4, 55.0], [96.4, 57.0], [99.4, 58.4],
   [D, 60],
 ]
-export const warp = interpolate(WARP.map((k) => k[0]), WARP.map((k) => k[1]))
+export const warp = monotone(WARP)
 
 /** start: presentation seconds; hold: settled scene-time frame shown under reduced motion */
 export const SCENES = [
@@ -79,14 +80,28 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false)
 
-  useAnimationFrame((_, delta) => {
-    // the frame loop clamps delta (≈40 ms), so a backgrounded tab resumes where it left off
-    if (FREEZE !== null || pausedRef.current) return
-    acc.current = (acc.current + (delta / 1000) * RATE) % CYCLE
-    cycle.set(acc.current)
-    const l = langAt(acc.current)
-    if (l !== lang) setLang(l)
-  })
+  const langRef = useRef(lang)
+
+  useEffect(() => {
+    if (FREEZE !== null) return
+    let id = 0
+    let last: number | undefined
+    const tick = (now: number) => {
+      // rAF's vsync frame time, not callback time (motion's frame loop reads performance.now(), whose
+      // scheduling jitter showed up as uneven steps on fast movers); clamped so a backgrounded tab resumes in place
+      const dt = last === undefined ? 0 : Math.min(now - last, 40)
+      last = now
+      if (!pausedRef.current) {
+        acc.current = (acc.current + (dt / 1000) * RATE) % CYCLE
+        cycle.set(acc.current)
+        const l = langAt(acc.current)
+        if (l !== langRef.current) setLang((langRef.current = l))
+      }
+      id = requestAnimationFrame(tick)
+    }
+    id = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(id)
+  }, [cycle])
 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -111,7 +126,9 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
 }
 
 type KF = readonly number[]
-type Ease = EasingFunction | EasingFunction[]
+/** 'smooth': one monotone spline through all keyframes — velocity carries through intermediate keyframes
+    instead of stopping at each, and still rests at holds, reversals and both ends. Times must strictly increase. */
+type Ease = EasingFunction | EasingFunction[] | 'smooth'
 
 export interface MProps {
   t: KF
@@ -137,18 +154,31 @@ export function M({ t, o, x, y, s, rot, draw, ease = inOut, u = 'px', as = 'div'
   const ref = useRef<HTMLElement & SVGElement>(null)
   useLayoutEffect(() => {
     const el = ref.current!
-    const f = (k?: KF) => (k ? interpolate(t as number[], k as number[], { ease }) : null)
+    const f = (k?: KF) => (!k ? null : ease === 'smooth' ? monotone(t.map((ti, i) => [ti, k[i]]), true) : interpolate(t as number[], k as number[], { ease }))
     const fo = f(o), fx = f(x), fy = f(y), fs = f(s), fr = f(rot), fd = f(draw)
     const moves = fx || fy || fs || fr
+    // HTML (and root <svg>) elements get their own compositor layer only across segments where they change,
+    // promoted slightly early so the layer is rasterised before motion starts; otherwise every frame
+    // re-rasterises the region beneath them (sheet shadows, grain). SVG children can't be layered.
+    const layer = as === 'div' || as === 'span' || as === 'svg'
+    const kfs = [o, x, y, s, rot].filter(Boolean) as KF[]
+    const live = t.slice(1).flatMap((b, i) => (kfs.some((k) => k[i] !== k[i + 1]) ? [[t[i] - 0.3, b + 0.05]] : []))
+    const hint = o ? (moves ? 'transform, opacity' : 'opacity') : 'transform'
+    const w = { o: '', vis: '', tf: '', d: '', wc: '' }
+    // writes only on change: static elements cost nothing per frame
+    const set = (k: keyof typeof w, prop: 'opacity' | 'visibility' | 'transform' | 'strokeDashoffset' | 'willChange', v: string) => {
+      if (w[k] !== v) el.style[prop] = w[k] = v
+    }
     const apply = (v: number) => {
       if (fo) {
         const a = fo(v)
-        el.style.opacity = String(a)
-        el.style.visibility = a < 0.002 ? 'hidden' : ''
+        set('o', 'opacity', String(a))
+        set('vis', 'visibility', a < 0.002 ? 'hidden' : '')
       }
       if (moves)
-        el.style.transform = `translate(${fx ? fx(v) : 0}${u},${fy ? fy(v) : 0}${u}) scale(${fs ? fs(v) : 1}) rotate(${fr ? fr(v) : 0}deg)`
-      if (fd) el.style.strokeDashoffset = String(1 - fd(v))
+        set('tf', 'transform', `translate(${fx ? fx(v) : 0}${u},${fy ? fy(v) : 0}${u}) scale(${fs ? fs(v) : 1}) rotate(${fr ? fr(v) : 0}deg)`)
+      if (fd) set('d', 'strokeDashoffset', String(1 - fd(v)))
+      if (layer) set('wc', 'willChange', live.some(([a, b]) => v >= a && v <= b) ? hint : '')
     }
     apply(clock.get())
     return clock.on('change', apply)

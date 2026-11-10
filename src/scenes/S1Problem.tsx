@@ -1,6 +1,6 @@
 import { MiniDoc, type DocKind } from '../components/Invoice'
 import { useT } from '../i18n'
-import { inOut, linear, M, out, Words } from '../timeline'
+import { inOut, M, out, Words } from '../timeline'
 
 /* Scene 1 · Every document holds information.
    The collection gathers around the invoice, then parts to single it out. */
@@ -42,7 +42,7 @@ export function S1Problem() {
               rot={[d.r + vx * 14, d.r, d.r * 1.15, d.r * 1.3, d.r * 1.5]}
               s={[1.05, 1, 1, 0.98, 0.95]}
               o={[0, 1, 1, 0.2, 0]}
-              ease={[out, linear, inOut, inOut]}
+              ease="smooth"
             >
               <MiniDoc kind={d.kind} w={d.w} h={d.h} />
               <M className="absolute label text-ink-3 whitespace-nowrap" style={{ left: 0, top: d.h + 16, fontSize: 12 }} t={[a + 1.0, a + 1.7, 5.3, 5.9]} o={[0, 1, 1, 0]} y={[6, 0, 0, 0]}>

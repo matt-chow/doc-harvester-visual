@@ -122,10 +122,10 @@ export function S4Research() {
           </div>
         </M>
       ))}
-      <M className="absolute rounded-full" style={{ left: -5.5, top: 874, width: 11, height: 11, background: 'var(--color-terra)' }} t={[36.6, 37.0, 38.6, 39.6, 41.0, 41.9, 44.2, 44.9, 45.6, 46.2, ...fade]} x={[250, 250, 560, 860, 860, 1160, 1160, 1460, 1460, 1740, 1740, 1740]} o={[0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]} />
+      <M className="absolute rounded-full" style={{ left: -5.5, top: 874, width: 11, height: 11, background: 'var(--color-terra)' }} t={[36.6, 37.0, 38.6, 39.6, 41.0, 41.9, 44.2, 44.9, 45.6, 46.2, ...fade]} x={[250, 250, 560, 860, 860, 1160, 1160, 1460, 1460, 1740, 1740, 1740]} o={[0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]} ease="smooth" />
 
       {/* the document group, duplicated into three examples */}
-      <M className="absolute" style={{ left: -DW / 2, top: -DH / 2, width: DW, height: DH }} t={G.t} x={G.x} y={G.y} s={G.s} o={G.o}>
+      <M className="absolute" style={{ left: -DW / 2, top: -DH / 2, width: DW, height: DH }} t={G.t} x={G.x} y={G.y} s={G.s} o={G.o} ease="smooth">
         {[2, 1].map((k) => (
           <M key={k} className="absolute" t={[37.0 + (k - 1) * 0.15, 37.8 + (k - 1) * 0.15]} x={[0, -18 * k]} y={[0, -16 * k]} rot={[0, -3.5 * k]} ease={inOut}>
             <TrainDoc />

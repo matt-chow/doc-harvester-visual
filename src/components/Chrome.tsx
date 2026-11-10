@@ -24,9 +24,10 @@ export function Chrome() {
         })}
       </div>
       <div className="absolute" style={{ left: 72, right: 72, top: 1030, height: 1, background: 'var(--color-rule)' }}>
-        <div className="absolute inset-0 overflow-hidden">
+        {/* fades out as the pass ends, so the rule never snaps from full back to empty at the seam */}
+        <M className="absolute inset-0 overflow-hidden" t={[D - 1.4, D - 0.3]} o={[1, 0]}>
           <M className="absolute inset-0" data-progress style={{ background: 'var(--color-ink)' }} t={[0, D]} x={[-100, 0]} u="%" ease={linear} />
-        </div>
+        </M>
         {SCENES.map((s, i) => (
           <div key={i} className="absolute" style={{ left: `${(s.start / D) * 100}%`, top: -4, width: 1, height: 9, background: 'var(--color-ink-3)' }} />
         ))}
