@@ -71,15 +71,10 @@ export function S6Review() {
                   </M>
                 )}
               </span>
-              <Chip bg="var(--color-off)" fg="var(--color-ink-2)" t={flagged ? [T.flag, T.flag + 0.8] : [ok, ok + 0.8]} o={[1, 0]}>
+              <Chip bg="var(--color-off)" fg="var(--color-ink-2)" t={[ok, ok + 0.8]} o={[1, 0]}>
                 {tr.s6.candidate}
               </Chip>
             </M>
-            {flagged && (
-              <Chip bg="var(--color-warn)" fg="#fff" t={[T.flag, T.flag + 0.8, ok, ok + 0.8]} o={[0, 1, 1, 0]}>
-                {tr.s6.review}
-              </Chip>
-            )}
             <Chip bg="var(--color-ok)" fg="#fff" t={[ok, ok + 0.8]} o={[0, 1]}>
               {tr.s6.verified}
             </Chip>
