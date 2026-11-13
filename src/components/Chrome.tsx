@@ -133,14 +133,20 @@ export function Seam() {
   )
 }
 
-/** Shown only while Space has paused the clock. A CSS fade; the clock itself is stopped. */
+/** Shown only while Space has paused the clock, or while 2 has doubled its speed. A CSS fade; the clock itself is stopped. */
 export function PauseIndicator() {
-  const { paused } = useTimes()
+  const { paused, fast } = useTimes()
   const tr = useT()
+  const at = { left: X0 + 72, top: 1010, fontSize: 14, transition: 'opacity 420ms ease' }
   return (
-    <div className="absolute flex items-center gap-2" style={{ left: X0 + 72, top: 1010, fontSize: 14, color: 'var(--color-ink-2)', opacity: paused ? 1 : 0, transition: 'opacity 420ms ease' }} aria-live="polite">
-      <span style={{ width: 8, height: 11, borderLeft: '3px solid var(--color-blue)', borderRight: '3px solid var(--color-blue)' }} />
-      {paused ? tr.controls.paused : ''}
-    </div>
+    <>
+      <div className="absolute flex items-center gap-2" style={{ ...at, color: 'var(--color-ink-2)', opacity: paused ? 1 : 0 }} aria-live="polite">
+        <span style={{ width: 8, height: 11, borderLeft: '3px solid var(--color-blue)', borderRight: '3px solid var(--color-blue)' }} />
+        {paused ? tr.controls.paused : ''}
+      </div>
+      <div className="absolute" style={{ ...at, color: 'var(--color-blue)', fontWeight: 600, opacity: fast && !paused ? 1 : 0 }}>
+        2×
+      </div>
+    </>
   )
 }
