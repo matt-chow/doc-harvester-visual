@@ -3,7 +3,6 @@ import {
   createElement,
   useContext,
   useEffect,
-  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -17,33 +16,26 @@ import { monotone } from './monotone'
 
 /* One clock drives everything. A single accumulator (cycle seconds) advances on the frame loop
    unless paused; every element is a pure function of it, so nothing can drift or run independently.
-   Scene keyframes are authored in "scene time" (0–60); WARP maps presentation time onto it,
-   stretching transitions and inserting near-still holds after reveals rather than scaling uniformly. */
+   Keyframes are authored directly in presentation seconds (0–D); the clock runs at constant speed. */
 
 export const D = 102 // seconds per language pass
 export const CYCLE = D * 2 // en-CA pass, then fr-CA pass
 
-// [presentation s, scene s] — steep segments are motion, shallow ones are holds
-const WARP: [number, number][] = [
-  [0, 0], [0.8, 0.45], [3.6, 2.4], [6.0, 4.4], [9.0, 5.0], [11.0, 6.6], [13.0, 7.0],
-  [16, 9], [18.6, 10.6], [20.4, 11], [22.8, 12.4], [25.2, 13.9], [26.6, 14.2], [28.6, 15.8], [30.2, 16.4], [33.6, 19.9], [36, 20.5],
-  [38, 22], [41, 24.2], [42.6, 24.7], [45.4, 27.2], [47.2, 28.2], [49.6, 28.3], [52.6, 31.3], [56.2, 33.9], [58.6, 34.0],
-  [60, 35], [62.6, 37.0], [63.6, 37.2], [65.6, 38.8], [67.4, 40.4], [68.6, 40.6], [70.4, 41.9], [73.4, 43.7], [74.4, 43.9], [77, 46.3], [79.2, 46.45],
-  [80, 47], [82.6, 49.0], [83.4, 49.2], [86.2, 51.6], [88.2, 51.8], [90.6, 53.6], [92.6, 54.5], [94.4, 55.0], [96.4, 57.0], [99.4, 58.4],
-  [D, 60],
-]
-export const warp = monotone(WARP)
-
-/** start: presentation seconds; hold: settled scene-time frame shown under reduced motion */
+/** start: presentation seconds; hold: settled frame shown under reduced motion */
 export const SCENES = [
-  { start: 0, hold: 4.9 },
-  { start: 16, hold: 20.8 },
-  { start: 38, hold: 33.95 },
-  { start: 60, hold: 46.4 },
-  { start: 80, hold: 56.9 },
+  { start: 0, hold: 12 },
+  { start: 20, hold: 32 },
+  { start: 40, hold: 52 },
+  { start: 60, hold: 72 },
+  { start: 80, hold: 94 },
 ] as const
+/** content area clears here at the end of each pass, before the seam label appears */
+export const CLEAR = [D - 3.4, D - 2.2]
+/** [start, end] of scene i */
+export const span = (i: number): [number, number] => [SCENES[i].start, SCENES[i + 1]?.start ?? D]
 
-export const inOut = cubicBezier(0.65, 0, 0.35, 1)
+// soft in-out: low peak velocity, so slow fades and slides never appear to lurch
+export const inOut = cubicBezier(0.45, 0, 0.55, 1)
 export const out = cubicBezier(0.16, 1, 0.3, 1)
 export const inn = cubicBezier(0.6, 0, 0.9, 0.4)
 export const linear = (v: number) => v
@@ -70,7 +62,7 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
   const cycle = useMotionValue(acc.current)
   const local = useTransform(cycle, (c) => c % D)
   const scene = useTransform(local, (s) => {
-    if (!reduced) return warp(s)
+    if (!reduced) return s
     // reduced motion: hold each scene's settled frame instead of animating through it
     let i = SCENES.length - 1
     while (SCENES[i].start > s) i--
@@ -195,87 +187,5 @@ export function M({ t, o, x, y, s, rot, draw, ease = inOut, u = 'px', as = 'div'
       ...rest,
     },
     children,
-  )
-}
-
-/** Masked word-by-word reveal; words rise in at `at`, and lift out at `end`. */
-export function Words({
-  lines,
-  at,
-  end,
-  step = 0.06,
-  className,
-  style,
-}: {
-  lines: string[]
-  at: number
-  end: number
-  step?: number
-  className?: string
-  style?: CSSProperties
-}) {
-  let i = 0
-  return (
-    <div className={className} style={style}>
-      {lines.map((line, li) => (
-        <div key={li} className="whitespace-nowrap">
-          {line.split(' ').map((w, wi) => {
-            const k = i++
-            const a = at + k * step
-            const e = end + k * step * 0.4
-            return (
-              <span key={wi} className="inline-block overflow-hidden align-top" style={{ padding: '0.08em 0.02em 0.16em', margin: '-0.08em -0.02em -0.16em' }}>
-                <M as="span" className="inline-block" t={[a, a + 1.1, e, e + 0.7]} y={[1.8, 0, 0, -1.8]} u="em" ease={[out, linear, inOut]}>
-                  {w}
-                  {' '}
-                </M>
-              </span>
-            )
-          })}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/** SVG stroke that draws on; dashed strokes are revealed through a drawn mask so the dash pattern survives. */
-export function Stroke({
-  d,
-  t,
-  draw,
-  o,
-  dashed,
-  color = 'var(--color-ink)',
-  width = 1.5,
-  ease,
-}: {
-  d: string
-  t: KF
-  draw: KF
-  o?: KF
-  dashed?: boolean
-  color?: string
-  width?: number
-  ease?: Ease
-}) {
-  const id = 'm' + useId().replace(/[^a-zA-Z0-9]/g, '')
-  if (!dashed)
-    return <M as="path" d={d} t={t} draw={draw} o={o} ease={ease} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" />
-  return (
-    <g>
-      <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080">
-        <M as="path" d={d} t={t} draw={draw} ease={ease} fill="none" stroke="#fff" strokeWidth={width + 6} />
-      </mask>
-      <M as="path" d={d} t={t} o={o ?? t.map(() => 1)} ease={ease} mask={`url(#${id})`} fill="none" stroke={color} strokeWidth={width} strokeDasharray="5 6" />
-    </g>
-  )
-}
-
-/** Small mono tag. */
-export function Tag({ children, color = 'var(--color-ink-2)', className = '' }: { children: ReactNode; color?: string; className?: string }) {
-  return (
-    <span className={`label ${className}`} style={{ color }}>
-      {children}
-    </span>
   )
 }

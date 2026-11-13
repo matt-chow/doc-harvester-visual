@@ -1,23 +1,21 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/fraunces/opsz.css';
-@import '@fontsource-variable/fraunces/opsz-italic.css';
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/jetbrains-mono';
 
+/* Microsoft / Power Apps look: system Segoe UI, flat panels, blue accent on light gray. */
 @theme {
-  --color-paper: #f3eee4;
-  --color-sheet: #fbf8f2;
-  --color-ink: #1f1d1a;
-  --color-ink-2: #5b5650;
-  --color-ink-3: #8f877c;
-  --color-rule: #d9d1c3;
-  --color-terra: #c8643b;
-  --color-terra-soft: #ebc3ad;
-  --color-sage: #6f8f72;
-  --color-sage-soft: #cddbc9;
-  --font-serif: 'Fraunces Variable', Georgia, serif;
-  --font-sans: 'Inter Variable', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+  --color-bg: #f3f2f1;
+  --color-surface: #ffffff;
+  --color-ink: #201f1e;
+  --color-ink-2: #605e5c;
+  --color-ink-3: #8a8886;
+  --color-rule: #e1dfdd;
+  --color-blue: #0078d4;
+  --color-blue-soft: #deecf9;
+  --color-green: #5b8a5b;
+  --color-ok: #107c10;
+  --color-off: #edebe9;
+  --color-off-ink: #a19f9d;
+  --font-sans: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, 'SF Mono', Menlo, ui-monospace, monospace;
 }
 
 html,
@@ -25,34 +23,16 @@ body,
 #root {
   height: 100%;
   margin: 0;
-  background: var(--color-paper);
+  background: var(--color-bg);
   color: var(--color-ink);
+  font-family: var(--font-sans);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* paper grain: static, generated once, never animated */
-.grain::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.35;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .2 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-.sheet {
-  background: var(--color-sheet);
-  box-shadow:
-    0 1px 1px rgb(70 50 30 / 0.06),
-    0 2px 6px rgb(70 50 30 / 0.06),
-    0 18px 40px -14px rgb(70 50 30 / 0.28);
-}
-
-.label {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: 2px;
+  box-shadow: 0 1.6px 3.6px rgb(0 0 0 / 0.08), 0 0.3px 0.9px rgb(0 0 0 / 0.06);
 }

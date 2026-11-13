@@ -9,7 +9,7 @@ const SIZES = (process.env.SIZES ?? '1920x1080,1366x768').split(',').map((s) => 
 // [cycle start s, seconds] — each scene, the language seam and the cycle end; --full plays one whole bilingual cycle
 const WINDOWS = full
   ? [[0, 204]]
-  : [[0.5, 14], [16, 20], [38, 20], [60, 19], [80, 21], [99.5, 5], [102, 14], [201.5, 5]]
+  : [[0.5, 19], [19, 20], [39, 20], [59, 20], [79, 21], [99.5, 5], [102, 14], [201.5, 5]]
 
 const browser = await chromium.launch({ args: ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-unsafe-swiftshader'] })
 for (const [w, h] of SIZES) {

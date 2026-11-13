@@ -9,7 +9,7 @@ const D = 102
 const CYCLE = D * 2
 const base = process.argv.find((a) => a.startsWith('http')) ?? 'http://localhost:4173'
 const only = process.argv.find((a) => a.startsWith('--'))
-const TIMES = (process.env.TIMES ?? '0.4,2.5,5,8,10.5,12.5,15,18,20,23,25.8,28,30,33,35.5,37.5,40,43,46,48.5,51,54,57.5,59.5,62,64,66.5,69,72,74,77.5,79.5,82,85,87.5,90,92,94,97,99,101.5')
+const TIMES = (process.env.TIMES ?? '1,4,7,12,19.5,21,24,30,42,47,55,62,67,75,82,86,92,100.8')
   .split(',')
   .map(Number)
 const LANGS = (process.env.LANGS ?? 'en-CA,fr-CA').split(',')
@@ -132,7 +132,7 @@ if (only !== '--shots-only') {
 
   // --- pause across a scene change, the language change, and the end of the cycle
   for (const [from, label, before, after] of [
-    [15.4, 'scene 1→2 transition', 'en-CA', 'en-CA'],
+    [19.4, 'scene 1→2 transition', 'en-CA', 'en-CA'],
     [D - 1, 'en-CA→fr-CA transition', 'en-CA', 'fr-CA'],
     [CYCLE - 1, 'end of cycle', 'fr-CA', 'en-CA'],
   ]) {
