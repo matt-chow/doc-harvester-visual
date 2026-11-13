@@ -8,8 +8,8 @@ const full = process.argv.includes('--full')
 const SIZES = (process.env.SIZES ?? '1920x1080,1366x768').split(',').map((s) => s.split('x').map(Number))
 // [cycle start s, seconds] — each scene, the language seam and the cycle end; --full plays one whole bilingual cycle
 const WINDOWS = full
-  ? [[0, 204]]
-  : [[0.5, 19], [19, 20], [39, 20], [59, 20], [79, 21], [99.5, 5], [102, 14], [201.5, 5]]
+  ? [[0, 248]]
+  : [[0.5, 19], [19, 20], [39, 20], [59, 20], [79, 21], [99, 22], [121.5, 5], [124, 14], [245.5, 5]]
 
 const browser = await chromium.launch({ args: ['--enable-gpu', '--ignore-gpu-blocklist', '--use-angle=d3d11', '--enable-unsafe-swiftshader'] })
 for (const [w, h] of SIZES) {

@@ -18,7 +18,7 @@ import { monotone } from './monotone'
    unless paused; every element is a pure function of it, so nothing can drift or run independently.
    Keyframes are authored directly in presentation seconds (0–D); the clock runs at constant speed. */
 
-export const D = 102 // seconds per language pass
+export const D = 124 // seconds per language pass
 export const CYCLE = D * 2 // en-CA pass, then fr-CA pass
 
 /** start: presentation seconds; hold: settled frame shown under reduced motion */
@@ -28,6 +28,7 @@ export const SCENES = [
   { start: 40, hold: 52 },
   { start: 60, hold: 72 },
   { start: 80, hold: 94 },
+  { start: 100, hold: 119 },
 ] as const
 /** content area clears here at the end of each pass, before the seam label appears */
 export const CLEAR = [D - 3.4, D - 2.2]
@@ -41,7 +42,7 @@ export const inn = cubicBezier(0.6, 0, 0.9, 0.4)
 export const linear = (v: number) => v
 
 const params = new URLSearchParams(location.search)
-// ?t=110 freezes a frame in cycle seconds (≥102 is the French pass); ?from=100 starts playing there; ?rate=10 speeds playback
+// ?t=110 freezes a frame in cycle seconds (≥124 is the French pass); ?from=100 starts playing there; ?rate=10 speeds playback
 const FREEZE = params.has('t') ? Number(params.get('t')) % CYCLE : null
 const RATE = Number(params.get('rate')) || 1
 const FROM = (Number(params.get('from')) || 0) % CYCLE

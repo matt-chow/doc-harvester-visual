@@ -1,9 +1,11 @@
+import type { CSSProperties } from 'react'
+import { useT } from '../i18n'
 import { CLEAR, M, out } from '../timeline'
 import { FIELDS, Invoice, INV_H, INV_W, SAMPLE, useLines, type Line } from './Invoice'
 import { LAYOUT } from './Chrome'
 
-/* The sample invoice stays in one place from step 1 to step 5 (a shared element); each step only
-   adds or removes a flat overlay on it: page grid (2), OCR boxes (3), field highlights (4–5). */
+/* The sample invoice stays in one place from step 1 to step 6 (a shared element); each step only
+   adds or removes a flat overlay on it: page grid (2), OCR boxes (3), field highlights (4–6), review focus (6). */
 
 export const HERO_S = 0.7
 export const HERO_X = 96
@@ -30,6 +32,26 @@ function Overlay(l: Line, i: number, rank: Map<number, number>) {
           </span>
         </M>
       )}
+      {l.field === 'total_amount' && <Review inset={inset} />}
+    </>
+  )
+}
+
+/** step 6 · a reviewer's pointer and focus box on the printed total, which turns green once verified */
+function Review({ inset }: { inset: CSSProperties }) {
+  const tr = useT()
+  const box = { ...inset, left: -12, right: -12, borderWidth: 3, borderStyle: 'solid' }
+  return (
+    <>
+      <M className="absolute" style={{ ...box, borderColor: 'var(--color-warn)' }} t={[108.8, 109.6, 112.4, 113.2]} o={[0, 1, 1, 0]}>
+        <span className="absolute whitespace-nowrap" style={{ right: -3, top: 'calc(100% + 3px)', padding: '5px 8px', background: 'var(--color-warn)', color: '#fff', fontSize: 20, fontWeight: 600, lineHeight: 1, letterSpacing: 0, textTransform: 'none' }}>
+          {tr.s6.checking}
+        </span>
+      </M>
+      <M className="absolute" style={{ ...box, borderColor: 'var(--color-ok)' }} t={[112.4, 113.2]} o={[0, 1]} />
+      <M as="svg" className="absolute" style={{ left: -44, top: '40%' }} width={30} height={30} viewBox="0 0 16 16" t={[108.8, 110, 111, 111.8]} o={[0, 1, 1, 0]} x={[28, 0, 0, 0]} y={[20, 0, 0, 0]}>
+        <path d="M2 1l11 8-5 .5L11 15l-2 .8L6 10l-4 3.4z" fill="#fff" stroke="var(--color-ink)" strokeWidth={1.1} strokeLinejoin="round" />
+      </M>
     </>
   )
 }

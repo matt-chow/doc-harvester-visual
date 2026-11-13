@@ -7,7 +7,7 @@ import { ClockScope, CYCLE, D, linear, M, SCENES, span, useTimes } from '../time
 export const LAYOUT = { header: 48, headerH: 140, top: 236, bottom: 712, callout: 772, stepper: 904 }
 const X0 = 96
 const W = 1920 - X0 * 2
-const STEP_W = (W - 16 * 4) / 5
+const STEP_W = (W - 16 * (SCENES.length - 1)) / SCENES.length
 // the frame's per-scene text fades in after the previous scene's has gone; nothing cross-dissolves in place
 const textIn = (i: number, lag = 0) => {
   const [s, e] = span(i)

@@ -5,11 +5,11 @@ import { mkdirSync } from 'node:fs'
 import { translations } from '../src/i18n.ts'
 import { monotone } from '../src/monotone.ts'
 
-const D = 102
+const D = 124
 const CYCLE = D * 2
 const base = process.argv.find((a) => a.startsWith('http')) ?? 'http://localhost:4173'
 const only = process.argv.find((a) => a.startsWith('--'))
-const TIMES = (process.env.TIMES ?? '1,4,7,12,19.5,21,24,30,42,47,55,62,67,75,82,86,92,100.8')
+const TIMES = (process.env.TIMES ?? '1,4,7,12,19.5,21,24,30,42,47,55,62,67,75,82,86,92,100,104,107.8,110,112,115,119,122.8')
   .split(',')
   .map(Number)
 const LANGS = (process.env.LANGS ?? 'en-CA,fr-CA').split(',')
@@ -156,11 +156,13 @@ if (only !== '--shots-only') {
   // collect first: each language switch remounts the scene tree, leaving garbage that isn't a leak
   const metrics = async () => (await cdp.send('HeapProfiler.collectGarbage'), Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value])))
   await page.goto(`${base}/?rate=60`)
-  await page.waitForTimeout(800)
+  // baseline after one language switch and mid-pass, once one-time setup is done
+  while ((await lang()) !== 'fr-CA') await page.waitForTimeout(50)
+  while (Math.abs((await local()) - D / 2) > D / 4) await page.waitForTimeout(50)
   const m0 = await metrics()
   const seq = []
   const leaks = []
-  const end = Date.now() + 11500
+  const end = Date.now() + 14000
   while (Date.now() < end) {
     const [l, text] = await page.evaluate(() => [document.documentElement.lang, document.body.textContent.replace(/\s+/g, ' ')])
     if (seq.at(-1) !== l) {
@@ -169,6 +171,8 @@ if (only !== '--shots-only') {
     }
     await page.waitForTimeout(100)
   }
+  // sample mid-pass: right at a language switch the old tree is still awaiting collection
+  while (Math.abs((await local()) - D / 2) > D / 4) await page.waitForTimeout(50)
   const m1 = await metrics()
   seq.length >= 6 && !leaks.length ? ok(`language passes: ${seq.join(' → ')}`) : fail('bilingual loop', seq, leaks)
   const mb = (v) => (v / 1048576).toFixed(1) + 'MB'

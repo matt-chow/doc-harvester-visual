@@ -13,7 +13,7 @@ const en = {
   seam: 'English version',
   app: {
     subtitle: 'Invoice extraction',
-    step: (n: number) => `Step ${n} of 5`,
+    step: (n: number) => `Step ${n} of 6`,
     footnote: 'Example only · fictional sample data',
   },
   steps: [
@@ -22,6 +22,7 @@ const en = {
     { short: 'OCR', title: 'Run OCR', desc: 'Extract text with Tesseract OCR.', help: 'This turns document content into machine-readable text.' },
     { short: 'Extract', title: 'Extract invoice fields', desc: 'Identify invoice_number, invoice_date, vendor_name, and total_amount.', help: 'This creates structured invoice data.' },
     { short: 'Return JSON', title: 'Return JSON', desc: 'Validate the result and return structured output.', help: 'This makes the data ready for downstream use.' },
+    { short: 'Review', title: 'Human Review', desc: 'A reviewer checks and corrects the extracted invoice fields.', help: 'Reviewed results are used to prepare the LayoutLMv3 training dataset.' },
   ],
   invoice: {
     title: 'Invoice',
@@ -47,6 +48,20 @@ const en = {
   s3: { output: 'Text output' },
   s4: { output: 'Extracted fields', field: 'Field', value: 'Value' },
   s5: { response: 'Response', checks: ['All four fields found', 'invoice_date is a valid date', 'total_amount is a number'] },
+  s6: {
+    title: 'Annotation review',
+    sub: 'Mistral candidates for training',
+    field: 'Field',
+    status: 'Status',
+    candidate: 'Candidate',
+    review: 'Needs review',
+    verified: 'Verified',
+    reviewer: 'Human reviewer',
+    checking: 'Checking the source',
+    dataset: 'Training dataset',
+    fields: '4 fields verified',
+    train: 'Fine-tuning on verified annotations',
+  },
 }
 
 const fr: typeof en = {
@@ -56,7 +71,7 @@ const fr: typeof en = {
   seam: 'Version française',
   app: {
     subtitle: 'Extraction de factures',
-    step: (n: number) => `Étape ${n} sur 5`,
+    step: (n: number) => `Étape ${n} sur 6`,
     footnote: 'Exemple seulement · données fictives',
   },
   steps: [
@@ -65,6 +80,7 @@ const fr: typeof en = {
     { short: 'OCR', title: 'Exécuter l’OCR', desc: 'Extraire le texte avec Tesseract OCR.', help: 'Cela rend le contenu lisible par la machine.' },
     { short: 'Extraire', title: 'Extraire les champs de facture', desc: 'Identifier invoice_number, invoice_date, vendor_name et total_amount.', help: 'Cela produit des données de facture structurées.' },
     { short: 'Retourner', title: 'Retourner le JSON', desc: 'Valider le résultat et retourner une sortie structurée.', help: 'Cela prépare les données pour les systèmes en aval.' },
+    { short: 'Vérifier', title: 'Vérification humaine', desc: 'Une personne vérifie et corrige les champs extraits des factures.', help: 'Les résultats vérifiés servent à préparer le jeu de données d’entraînement de LayoutLMv3.' },
   ],
   invoice: {
     title: 'Facture',
@@ -90,6 +106,20 @@ const fr: typeof en = {
   s3: { output: 'Texte extrait' },
   s4: { output: 'Champs extraits', field: 'Champ', value: 'Valeur' },
   s5: { response: 'Réponse', checks: ['Les quatre champs sont trouvés', 'invoice_date est une date valide', 'total_amount est un nombre'] },
+  s6: {
+    title: 'Révision des annotations',
+    sub: 'Propositions de Mistral pour l’entraînement',
+    field: 'Champ',
+    status: 'Statut',
+    candidate: 'Proposé',
+    review: 'À vérifier',
+    verified: 'Vérifié',
+    reviewer: 'Révision humaine',
+    checking: 'Vérification de la source',
+    dataset: 'Jeu de données d’entraînement',
+    fields: '4 champs vérifiés',
+    train: 'Affinage sur les annotations vérifiées',
+  },
 }
 
 export const translations: Record<Lang, typeof en> = { 'en-CA': en, 'fr-CA': fr }

@@ -7,6 +7,7 @@ import { S2Convert } from './scenes/S2Convert'
 import { S3Ocr } from './scenes/S3Ocr'
 import { S4Extract } from './scenes/S4Extract'
 import { S5Json } from './scenes/S5Json'
+import { S6Review } from './scenes/S6Review'
 import { ClockProvider } from './timeline'
 
 /* A fixed 1920×1080 stage, scaled to fit any viewport; the page gray fills the letterbox. */
@@ -34,6 +35,7 @@ export default function App() {
                 <S3Ocr />
                 <S4Extract />
                 <S5Json />
+                <S6Review />
               </div>
               <Seam />
               <PauseIndicator />
