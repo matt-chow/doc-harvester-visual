@@ -38,3 +38,16 @@ body,
   border-radius: 2px;
   box-shadow: 0 1.6px 3.6px rgb(0 0 0 / 0.08), 0 0.3px 0.9px rgb(0 0 0 / 0.06);
 }
+
+/* step tracker cards are jump-to buttons: a soft lift on hover, a ring for keyboard focus */
+.step {
+  transition: transform 180ms ease, filter 180ms ease;
+}
+.step:hover {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.12));
+}
+.step:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 3px;
+}
