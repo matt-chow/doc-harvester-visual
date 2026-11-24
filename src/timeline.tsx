@@ -54,7 +54,17 @@ export const useClock = () => useContext(Clock)
 /** Re-base M elements inside onto another time axis (presentation or cycle seconds). */
 export const ClockScope = Clock.Provider
 
-const Times = createContext<{ local: MotionValue<number>; cycle: MotionValue<number>; paused: boolean; fast: boolean }>(null!)
+export const SPEEDS = [1, 2, 4] as const
+export type Speed = (typeof SPEEDS)[number]
+
+const Times = createContext<{
+  local: MotionValue<number>
+  cycle: MotionValue<number>
+  paused: boolean
+  speed: Speed
+  togglePause: () => void
+  setSpeed: (s: Speed) => void
+}>(null!)
 export const useTimes = () => useContext(Times)
 
 export function ClockProvider({ children }: { children: (lang: Lang) => ReactNode }) {
@@ -72,9 +82,11 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
   const [lang, setLang] = useState(langAt(acc.current))
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false)
-  // the 2 key toggles double speed on top of ?rate=
-  const [fast, setFast] = useState(false)
-  const fastRef = useRef(false)
+  // playback speed on top of ?rate=: the on-screen buttons, or keys 1 / 2 / 4
+  const [speed, setSpeedState] = useState<Speed>(1)
+  const speedRef = useRef<Speed>(1)
+  const setSpeed = (s: Speed) => setSpeedState((speedRef.current = s))
+  const togglePause = () => setPaused((pausedRef.current = !pausedRef.current))
 
   const langRef = useRef(lang)
 
@@ -88,7 +100,7 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
       const dt = last === undefined ? 0 : Math.min(now - last, 40)
       last = now
       if (!pausedRef.current) {
-        acc.current = (acc.current + (dt / 1000) * RATE * (fastRef.current ? 2 : 1)) % CYCLE
+        acc.current = (acc.current + (dt / 1000) * RATE * speedRef.current) % CYCLE
         cycle.set(acc.current)
         const l = langAt(acc.current)
         if (l !== langRef.current) setLang((langRef.current = l))
@@ -101,15 +113,18 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.code === 'Digit2' || e.code === 'Numpad2') {
-        if (!e.repeat) setFast((fastRef.current = !fastRef.current))
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const digit = Number(e.code.match(/^(?:Digit|Numpad)([124])$/)?.[1])
+      if (digit) {
+        // pressing the current speed again returns to 1× (so 2 still toggles double speed)
+        if (!e.repeat) setSpeed(speedRef.current === digit && digit !== 1 ? 1 : (digit as Speed))
         return
       }
       if (e.code !== 'Space') return
+      // a focused control button handles Space itself, as a click
+      if (e.target instanceof HTMLButtonElement) return
       e.preventDefault()
-      if (e.repeat) return
-      pausedRef.current = !pausedRef.current
-      setPaused(pausedRef.current)
+      if (!e.repeat) togglePause()
     }
     addEventListener('keydown', key)
     return () => removeEventListener('keydown', key)
@@ -117,7 +132,7 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
   useEffect(() => void (document.documentElement.lang = lang), [lang])
 
   return (
-    <Times.Provider value={{ local, cycle, paused, fast }}>
+    <Times.Provider value={{ local, cycle, paused, speed, togglePause, setSpeed }}>
       <LangContext.Provider value={lang}>
         <Clock.Provider value={scene}>{children(lang)}</Clock.Provider>
       </LangContext.Provider>

@@ -1,5 +1,5 @@
 import { translations, useT } from '../i18n'
-import { ClockScope, CYCLE, D, linear, M, SCENES, span, useTimes } from '../timeline'
+import { ClockScope, CYCLE, D, linear, M, SCENES, span, SPEEDS, useTimes } from '../timeline'
 
 /* The app frame: black app bar, blue header with the step title, a callout with what/why,
    and a five-step tracker. The frame itself never moves; only text inside it fades. */
@@ -133,19 +133,78 @@ export function Seam() {
   )
 }
 
-/** Shown only while Space has paused the clock, or while 2 has doubled its speed. A CSS fade; the clock itself is stopped. */
+/** Playback controls in the footer row: play/pause, then 1× / 2× / 4× with the unselected speeds faded back.
+    Keyboard: Space plays/pauses, 1 / 2 / 4 pick a speed. The clock itself stops while paused. */
 export function PauseIndicator() {
-  const { paused, fast } = useTimes()
+  const { paused, speed, togglePause, setSpeed } = useTimes()
   const tr = useT()
-  const at = { left: X0 + 72, top: 1010, fontSize: 14, transition: 'opacity 420ms ease' }
+  const H = 40
+  const W = 220
+  const fade = 'opacity 320ms ease, background-color 320ms ease, color 320ms ease'
+  const btn = {
+    // mouse clicks never leave focus on a button, so Space keeps working globally afterwards
+    onMouseDown: (e: { preventDefault: () => void }) => e.preventDefault(),
+  }
   return (
     <>
-      <div className="absolute flex items-center gap-2" style={{ ...at, color: 'var(--color-ink-2)', opacity: paused ? 1 : 0 }} aria-live="polite">
-        <span style={{ width: 8, height: 11, borderLeft: '3px solid var(--color-blue)', borderRight: '3px solid var(--color-blue)' }} />
-        {paused ? tr.controls.paused : ''}
+      <div
+        className="panel absolute flex items-center"
+        style={{ left: 960 - W / 2, top: 1000, width: W, height: H, padding: 4, gap: 4, borderRadius: H / 2 }}
+        role="toolbar"
+        aria-label={tr.controls.label}
+      >
+        <button
+          {...btn}
+          type="button"
+          onClick={togglePause}
+          aria-label={paused ? tr.controls.play : tr.controls.pause}
+          title={`${paused ? tr.controls.play : tr.controls.pause} (Space)`}
+          className="grid place-items-center rounded-full cursor-pointer"
+          style={{ width: H - 8, height: H - 8, flex: 'none', border: 0, background: 'var(--color-blue)', color: '#fff' }}
+        >
+          <svg width={14} height={14} viewBox="0 0 14 14" fill="currentColor" aria-hidden>
+            {paused ? <path d="M3.5 1.8v10.4a.5.5 0 0 0 .76.43l8.4-5.2a.5.5 0 0 0 0-.86l-8.4-5.2a.5.5 0 0 0-.76.43Z" /> : <path d="M3 1.5h2.6v11H3zM8.4 1.5H11v11H8.4z" />}
+          </svg>
+        </button>
+        <span style={{ width: 1, height: 20, background: 'var(--color-rule)', margin: '0 4px', flex: 'none' }} />
+        {SPEEDS.map((s) => {
+          const on = s === speed
+          return (
+            <button
+              {...btn}
+              key={s}
+              type="button"
+              onClick={() => setSpeed(s)}
+              aria-pressed={on}
+              aria-label={tr.controls.speed(s)}
+              title={`${tr.controls.speed(s)} (${s})`}
+              className="grid place-items-center cursor-pointer"
+              style={{
+                flex: 1,
+                height: H - 8,
+                border: 0,
+                borderRadius: (H - 8) / 2,
+                fontSize: 15,
+                fontWeight: 600,
+                fontVariantNumeric: 'tabular-nums',
+                background: on ? 'var(--color-blue-soft)' : 'transparent',
+                color: on ? 'var(--color-blue)' : 'var(--color-ink-2)',
+                opacity: on ? 1 : 0.38,
+                transition: fade,
+              }}
+            >
+              {s}×
+            </button>
+          )
+        })}
       </div>
-      <div className="absolute" style={{ ...at, color: 'var(--color-blue)', fontWeight: 600, opacity: fast && !paused ? 1 : 0 }}>
-        2×
+      {/* status text beside the bar; fades in only while paused */}
+      <div
+        className="absolute whitespace-nowrap"
+        style={{ left: 960 + W / 2 + 14, top: 1010, fontSize: 14, color: 'var(--color-ink-2)', opacity: paused ? 1 : 0, transition: 'opacity 420ms ease' }}
+        aria-live="polite"
+      >
+        {paused ? tr.controls.paused : ''}
       </div>
     </>
   )

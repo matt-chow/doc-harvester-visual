@@ -9,7 +9,7 @@ export const LANGS: Lang[] = ['en-CA', 'fr-CA']
 const en = {
   tag: 'EN-CA',
   language: 'English',
-  controls: { paused: 'Paused' },
+  controls: { paused: 'Paused', play: 'Play', pause: 'Pause', label: 'Playback', speed: (n: number) => `${n}× speed` },
   seam: 'English version',
   app: {
     subtitle: 'Invoice extraction',
@@ -66,7 +66,7 @@ const en = {
 const fr: typeof en = {
   tag: 'FR-CA',
   language: 'Français',
-  controls: { paused: 'En pause' },
+  controls: { paused: 'En pause', play: 'Lecture', pause: 'Pause', label: 'Lecture', speed: (n: number) => `Vitesse ${n}×` },
   seam: 'Version française',
   app: {
     subtitle: 'Extraction de factures',
