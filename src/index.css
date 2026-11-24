@@ -51,3 +51,15 @@ body,
   outline: 2px solid var(--color-blue);
   outline-offset: 3px;
 }
+
+/* language toggle in the app bar */
+.lang {
+  transition: filter 160ms ease;
+}
+.lang:hover {
+  filter: brightness(1.12);
+}
+.lang:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}

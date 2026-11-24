@@ -27,7 +27,7 @@ function Waffle() {
 
 export function Chrome() {
   const tr = useT()
-  const { local, goTo } = useTimes()
+  const { local, goTo, switchLang } = useTimes()
   return (
     <ClockScope value={local}>
       {/* app bar */}
@@ -35,13 +35,25 @@ export function Chrome() {
         <Waffle />
         <span style={{ fontSize: 17, fontWeight: 600 }}>Doc-Harvester</span>
         <span style={{ fontSize: 15, color: '#c8c6c4' }}>{tr.app.subtitle}</span>
-        <span className="ml-auto flex items-center" style={{ height: 32, padding: '0 16px', gap: 8, background: 'var(--color-green)', borderRadius: 2, fontSize: 14, fontWeight: 600 }}>
+        <button
+          type="button"
+          className="lang ml-auto flex items-center cursor-pointer"
+          style={{ height: 32, padding: '0 14px 0 16px', gap: 8, background: 'var(--color-green)', color: '#fff', border: 0, borderRadius: 2, font: 'inherit', fontSize: 14, fontWeight: 600 }}
+          onClick={switchLang}
+          onMouseDown={noFocus}
+          aria-label={tr.controls.switchLang}
+          title={`${tr.controls.switchLang} (L)`}
+        >
           <svg width={14} height={14} viewBox="0 0 14 14" fill="none" stroke="#fff" strokeWidth={1.2}>
             <circle cx={7} cy={7} r={6} />
             <path d="M1 7h12M7 1c-2 2-2 10 0 12M7 1c2 2 2 10 0 12" />
           </svg>
           {tr.language}
-        </span>
+          {/* swap arrows: says the button switches language */}
+          <svg width={14} height={14} viewBox="0 0 14 14" fill="none" stroke="#fff" strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 2, opacity: 0.85 }} aria-hidden>
+            <path d="M2 4.5h9.5M9 2l2.5 2.5L9 7M12 9.5H2.5M5 7 2.5 9.5 5 12" />
+          </svg>
+        </button>
       </div>
 
       {/* blue header strip */}

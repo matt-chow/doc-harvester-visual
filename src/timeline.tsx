@@ -66,6 +66,8 @@ const Times = createContext<{
   setSpeed: (s: Speed) => void
   /** jump to the start of step i in the current language pass; play/pause state is kept */
   goTo: (i: number) => void
+  /** jump to the other language at the same point in the pass; the en→fr loop carries on from there */
+  switchLang: () => void
 }>(null!)
 export const useTimes = () => useContext(Times)
 
@@ -93,6 +95,12 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
     const n = Math.max(0, Math.min(SCENES.length - 1, i))
     acc.current = (acc.current < D ? 0 : D) + SCENES[n].start
     cycle.set(acc.current)
+  }
+  const switchLang = () => {
+    acc.current = (acc.current + D) % CYCLE
+    cycle.set(acc.current)
+    // set here too: the frame loop only updates the language while playing
+    setLang((langRef.current = langAt(acc.current)))
   }
   /** index of the step on screen now */
   const current = () => {
@@ -142,6 +150,10 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
         goTo(fwd ? i + 1 : (acc.current % D) - SCENES[i].start > 2 ? i : i - 1)
         return
       }
+      if (e.code === 'KeyL') {
+        if (!e.repeat) switchLang()
+        return
+      }
       if (e.code !== 'Space') return
       // a focused control button handles Space itself, as a click
       if (e.target instanceof HTMLButtonElement) return
@@ -154,7 +166,7 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
   useEffect(() => void (document.documentElement.lang = lang), [lang])
 
   return (
-    <Times.Provider value={{ local, cycle, paused, speed, togglePause, setSpeed, goTo }}>
+    <Times.Provider value={{ local, cycle, paused, speed, togglePause, setSpeed, goTo, switchLang }}>
       <LangContext.Provider value={lang}>
         <Clock.Provider value={scene}>{children(lang)}</Clock.Provider>
       </LangContext.Provider>
