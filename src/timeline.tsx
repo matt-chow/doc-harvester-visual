@@ -64,6 +64,8 @@ const Times = createContext<{
   speed: Speed
   togglePause: () => void
   setSpeed: (s: Speed) => void
+  /** jump to the start of step i in the current language pass; play/pause state is kept */
+  goTo: (i: number) => void
 }>(null!)
 export const useTimes = () => useContext(Times)
 
@@ -87,6 +89,17 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
   const speedRef = useRef<Speed>(1)
   const setSpeed = (s: Speed) => setSpeedState((speedRef.current = s))
   const togglePause = () => setPaused((pausedRef.current = !pausedRef.current))
+  const goTo = (i: number) => {
+    const n = Math.max(0, Math.min(SCENES.length - 1, i))
+    acc.current = (acc.current < D ? 0 : D) + SCENES[n].start
+    cycle.set(acc.current)
+  }
+  /** index of the step on screen now */
+  const current = () => {
+    let i = SCENES.length - 1
+    while (SCENES[i].start > acc.current % D) i--
+    return i
+  }
 
   const langRef = useRef(lang)
 
@@ -120,6 +133,15 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
         if (!e.repeat) setSpeed(speedRef.current === digit && digit !== 1 ? 1 : (digit as Speed))
         return
       }
+      // presentation navigation: arrows step between the six steps
+      if (e.code === 'ArrowRight' || e.code === 'ArrowLeft' || e.code === 'PageDown' || e.code === 'PageUp') {
+        e.preventDefault()
+        const fwd = e.code === 'ArrowRight' || e.code === 'PageDown'
+        // back from partway into a step restarts it; from its first seconds it goes to the previous step
+        const i = current()
+        goTo(fwd ? i + 1 : (acc.current % D) - SCENES[i].start > 2 ? i : i - 1)
+        return
+      }
       if (e.code !== 'Space') return
       // a focused control button handles Space itself, as a click
       if (e.target instanceof HTMLButtonElement) return
@@ -132,7 +154,7 @@ export function ClockProvider({ children }: { children: (lang: Lang) => ReactNod
   useEffect(() => void (document.documentElement.lang = lang), [lang])
 
   return (
-    <Times.Provider value={{ local, cycle, paused, speed, togglePause, setSpeed }}>
+    <Times.Provider value={{ local, cycle, paused, speed, togglePause, setSpeed, goTo }}>
       <LangContext.Provider value={lang}>
         <Clock.Provider value={scene}>{children(lang)}</Clock.Provider>
       </LangContext.Provider>

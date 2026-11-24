@@ -14,6 +14,9 @@ const textIn = (i: number, lag = 0) => {
   return { t: [s + 0.4 + lag, s + 1.6 + lag, e - 1.2, e], o: [0, 1, 1, 0], y: [8, 0, 0, 0] }
 }
 
+/** mouse clicks never leave focus on a button, so Space keeps working globally afterwards */
+const noFocus = (e: { preventDefault: () => void }) => e.preventDefault()
+
 function Waffle() {
   return (
     <svg width={18} height={18} viewBox="0 0 18 18">
@@ -24,7 +27,7 @@ function Waffle() {
 
 export function Chrome() {
   const tr = useT()
-  const { local } = useTimes()
+  const { local, goTo } = useTimes()
   return (
     <ClockScope value={local}>
       {/* app bar */}
@@ -86,22 +89,31 @@ export function Chrome() {
           </span>
         )
         return (
-          <div key={i} className="absolute" style={{ left: X0 + i * (STEP_W + 16), top: LAYOUT.stepper, width: STEP_W, height: 72 }}>
-            <div {...card} style={{ ...card.style, background: 'var(--color-off)', color: 'var(--color-off-ink)' }}>
+          <button
+            key={i}
+            type="button"
+            className="step absolute cursor-pointer"
+            style={{ left: X0 + i * (STEP_W + 16), top: LAYOUT.stepper, width: STEP_W, height: 72, padding: 0, border: 0, background: 'none', font: 'inherit', textAlign: 'left' }}
+            onClick={() => goTo(i)}
+            onMouseDown={noFocus}
+            aria-label={tr.controls.goTo(i + 1, st.title)}
+            title={tr.controls.goTo(i + 1, st.title)}
+          >
+            <span {...card} style={{ ...card.style, background: 'var(--color-off)', color: 'var(--color-off-ink)' }}>
               {num('#fff', 'var(--color-off-ink)')}
               {st.short}
-            </div>
+            </span>
             {!last && (
-              <M {...card} style={{ ...card.style, background: '#fff', color: 'var(--color-ink)', border: '1px solid var(--color-rule)' }} t={[e - 0.8, e + 0.4, D - 1.4, D - 0.4]} o={[0, 1, 1, 0]}>
+              <M as="span" {...card} style={{ ...card.style, background: '#fff', color: 'var(--color-ink)', border: '1px solid var(--color-rule)' }} t={[e - 0.8, e + 0.4, D - 1.4, D - 0.4]} o={[0, 1, 1, 0]}>
                 {num('var(--color-ok)', '#fff', '✓')}
                 {st.short}
               </M>
             )}
-            <M {...card} style={{ ...card.style, background: 'var(--color-blue)', color: '#fff', fontWeight: 600 }} t={last ? [s + 0.2, s + 1.2, D - 1.4, D - 0.4] : [s + 0.2, s + 1.2, e - 0.8, e + 0.4]} o={[0, 1, 1, 0]}>
+            <M as="span" {...card} style={{ ...card.style, background: 'var(--color-blue)', color: '#fff', fontWeight: 600 }} t={last ? [s + 0.2, s + 1.2, D - 1.4, D - 0.4] : [s + 0.2, s + 1.2, e - 0.8, e + 0.4]} o={[0, 1, 1, 0]}>
               {num('#fff', 'var(--color-blue)')}
               {st.short}
             </M>
-          </div>
+          </button>
         )
       })}
 
@@ -142,8 +154,7 @@ export function PauseIndicator() {
   const W = 220
   const fade = 'opacity 320ms ease, background-color 320ms ease, color 320ms ease'
   const btn = {
-    // mouse clicks never leave focus on a button, so Space keeps working globally afterwards
-    onMouseDown: (e: { preventDefault: () => void }) => e.preventDefault(),
+    onMouseDown: noFocus,
   }
   return (
     <>
